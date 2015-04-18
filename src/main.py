@@ -74,8 +74,7 @@ def main():
 
         dx = player.rect.center[0] - screenRect.width / 2
         dy = player.rect.center[1] - screenRect.height / 2
-        screenRect.left += dx
-        screenRect.top += dy
+        level.update(dt, dx, dy)
         sprites.update(dt, dx, dy)
         
         # Blit everything to the screen
