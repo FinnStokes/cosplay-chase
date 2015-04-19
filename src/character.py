@@ -1,6 +1,5 @@
 import itertools
 import math
-import time
 
 import pygame
 from pygame.locals import *
@@ -45,6 +44,8 @@ class Character(pygame.sprite.Sprite):
         self.rect.center = self.pos
         self.speed = speed
         self.level = level
+        self.dx = 0
+        self.dy = 0
 
     def move(self, direction, dt):
         current = self.pos
@@ -128,15 +129,52 @@ class Character(pygame.sprite.Sprite):
 
     def set_pos(self, pos):
         self.pos = pos
-        self.rect.center = pos
+        self.rect.center = (pos[0] - self.dx, pos[1] - self.dy)
 
     def update(self, dt, dx, dy):
-        self.set_pos((self.pos[0] - dx, self.pos[1] - dy))
+        self.dx += dx
+        self.dy += dy
+        self.set_pos(self.pos)
     
 class Player(Character):
     """Player character"""
 
     def __init__(self, x, y, speed, level):
         surf = pygame.Surface((60, 60))
-        surf.fill((100, 100, 100))
+        surf.fill((100, 0, 0))
         Character.__init__(self, surf, x, y, speed, level)
+
+class Guard(Character):
+    """Guard that moves towards player character"""
+
+    def __init__(self, x, y, speed, player, guards, level):
+        surf = pygame.Surface((40, 40))
+        surf.fill((0, 0, 100))
+        Character.__init__(self, surf, x, y, speed, level)
+        self.player = player
+        self.guards = guards
+        self.memory = {}
+
+    def update(self, dt, dx, dy):
+        Character.update(self, dt, dx, dy)
+
+        # Update memory
+        if self.cansee(self.player):
+            self.memory[self.player] = (self.player.pos[0], self.player.pos[1])
+        for guard in self.guards:
+            if self.cansee(guard):
+                self.memory[guard] = (guard.pos[0], guard.pos[1])
+
+        # Update movement
+        direction = (0, 0)
+        if self.player in self.memory:
+            playerpos = self.memory[self.player]
+            direction = (playerpos[0] - self.pos[0], playerpos[1] - self.pos[1])
+        mag = math.sqrt(direction[0]**2 + direction[1]**2)
+        if mag < self.speed*dt:
+            mag = self.speed*dt
+        direction = (direction[0]/mag, direction[1]/mag)
+        self.move(direction, dt)
+
+    def cansee(self, other):
+        return ((self.pos[0] - other.pos[0])**2 + (self.pos[1] - other.pos[1])**2) < 300**2

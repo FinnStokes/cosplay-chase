@@ -28,8 +28,16 @@ def main():
     # Load level from tiled level file
     level = world.Level(os.path.join("data","world","test.tmx"))
 
-    player = character.Player(80, 1680, 800, level)
+    spawnLoc = level.data.get_object_by_name("Player")
+    player = character.Player(spawnLoc.x, spawnLoc.y, 800, level)
     sprites.add(player)
+
+    guards = pygame.sprite.Group()
+    for o in level.data.objects:
+        if o.type == "guard_spawn":
+            guard = character.Guard(o.x, o.y, 500, player, guards, level)
+            guards.add(guard)
+            sprites.add(guard)
     
     # Initialise clock
     clock = pygame.time.Clock()

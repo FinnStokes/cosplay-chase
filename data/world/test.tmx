@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" nextobjectid="1">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" nextobjectid="16">
  <tileset firstgid="1" name="Tileset" tilewidth="32" tileheight="32">
   <image source="tileset.png" width="64" height="32"/>
   <tile id="0">
@@ -18,4 +18,14 @@
    eJztmcmSAzEIQ5P5/4+ea1eqF9tISLQ5UDOHxEZ6XsD5fj6fb4dV/HVYRPPwiubhFc3DK5qHVzQPr2geXtE8vKJ5eEXz8Irm4RXNwyueeDQvLx7NxI/H8XMVuVTKfTbPStqOOa9orcDjjIu7xru8IxoYvyUhx6jGZpTTLMOID0gP+7fHaz9UPJjjV40ZLmweZzntymhEexaPZjTmuZLHzoyutLnxGGGk9hKpqyKPJz5VWWXwUHtSiU1GPeriQ4W9sxOPEUYO+ezMg6m7edSPt9RXbwkmD4f9XykY/aDb/VgpkO8lzcCHR3PAsEDwaBY4HlGP1SzU87vwcPHBJQ8miyedLh68pY4byT/jdxGEjrP/K0XkXlCxGPldw2mdzGpb4abQO3sWVeMRqWFV+4KlzyFW+zvl3mAzrMZDeWdkclToq7Y/srSqeEQ0ZepD+OnMJPJWq+LhNI6DPlX/gRzfcY9E6pSr/rwKDzcmkVxU71eMce/6+5VQaHuam+UbgzGbLcLP0TWEnOMNPO58Q/h0Nd7oGLvzQPn49NnZcVB61L4iuSDPM+bZyGJaORh3A6OW2yFYd3Wk11F7oubh5O3uNQGbx2ydna3NKWbq2Mh9oORRiUlGzZRdK2eMWZnH7DwMjRWYZPYUiveWakxW3rOY87H9cuax+r5YnYcrk6zebub7GV65MlHwQOekYqKsyVfeJt15ROdC7rHVmiqj/8g8SzLOX+S6+J0v870kk4mS6WgOZ/Nkvu9mclEzWa1zVPXxLkxmx1/hgfTLvXdnr50ID1ZubCZO46B5sNbJMRdGH+A0ThUeLDbovmJHHmgu6HtvVx5XbLLfhZhjRXhk9nXofNC5M2q3yFpz4fKb011eTrUCoh9053LFx612u8oF2TO5skFqRYx59x3GmerORcl55Dxl9ty7cBnROeJHhmc7cHGspUfmeSMb195mhY3aS7Se6N2u9OVNXL6Hv6OaUP0gk406D1Teq3WUmw9V7pnoW0BW/5GtWbFGIufRk+cOeld1ZfkefaM6uyPUWl2Y3HnO8mFmnio8znSt+q7WMZK3Oo8om2q+v43HW6N5eMXIvu/IjX+fSUoR
   </data>
  </layer>
+ <objectgroup name="Object Layer 1">
+  <object id="6" name="Player" type="player_spawn" x="2336" y="1152"/>
+  <object id="7" name="Guard 1" type="guard_spawn" x="864" y="896"/>
+  <object id="9" name="Guard 2" type="guard_spawn" x="480" y="224"/>
+  <object id="10" name="Guard 3" type="guard_spawn" x="2400" y="288"/>
+  <object id="11" name="Guard 4" type="guard_spawn" x="2816" y="1728"/>
+  <object id="12" name="Guard 5" type="guard_spawn" x="2080" y="2048"/>
+  <object id="13" name="Guard 6" type="guard_spawn" x="1280" y="1664"/>
+  <object id="14" name="Guard 7" type="guard_spawn" x="192" y="2080"/>
+ </objectgroup>
 </map>
