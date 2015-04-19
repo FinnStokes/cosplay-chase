@@ -23,12 +23,12 @@ def main():
     # Fill background
     background = pygame.Surface(screen.get_size())
     background = background.convert()
-    background.fill((0,0,0))
+    background.fill((50,50,50))
 
     # Load level from tiled level file
     level = world.Level(os.path.join("data","world","test.tmx"))
 
-    player = character.Player(80, 80, 512, level)
+    player = character.Player(80, 1680, 800, level)
     sprites.add(player)
     
     # Initialise clock
