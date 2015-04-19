@@ -1,31 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" nextobjectid="16">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" nextobjectid="24">
  <tileset firstgid="1" name="Tileset" tilewidth="32" tileheight="32">
   <image source="tileset.png" width="64" height="32"/>
   <tile id="0">
    <properties>
     <property name="Passable" value="False"/>
+    <property name="Transparent" value="False"/>
    </properties>
   </tile>
   <tile id="1">
    <properties>
     <property name="Passable" value="True"/>
+    <property name="Transparent" value="True"/>
    </properties>
   </tile>
  </tileset>
  <layer name="Tile Layer 1" width="100" height="100">
   <data encoding="base64" compression="zlib">
-   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
+   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
   </data>
  </layer>
  <objectgroup name="Object Layer 1">
   <object id="6" name="Player" type="player_spawn" x="2336" y="1152"/>
   <object id="7" name="Guard 1" type="guard_spawn" x="864" y="896"/>
-  <object id="9" name="Guard 2" type="guard_spawn" x="480" y="224"/>
-  <object id="10" name="Guard 3" type="guard_spawn" x="2400" y="288"/>
-  <object id="11" name="Guard 4" type="guard_spawn" x="2816" y="1728"/>
-  <object id="12" name="Guard 5" type="guard_spawn" x="2080" y="2048"/>
-  <object id="13" name="Guard 6" type="guard_spawn" x="1280" y="1664"/>
-  <object id="14" name="Guard 7" type="guard_spawn" x="192" y="2080"/>
+  <object id="9" type="guard_spawn" x="480" y="224"/>
+  <object id="10" type="guard_spawn" x="2400" y="288"/>
+  <object id="12" type="guard_spawn" x="2080" y="2048"/>
+  <object id="13" type="guard_spawn" x="1280" y="1664"/>
+  <object id="14" type="guard_spawn" x="192" y="2080"/>
+  <object id="18" type="guard_spawn" x="1568" y="3008"/>
+  <object id="19" type="guard_spawn" x="2816" y="800"/>
+  <object id="20" type="guard_spawn" x="1344" y="128"/>
+  <object id="21" type="guard_spawn" x="2528" y="2752"/>
+  <object id="22" type="guard_spawn" x="96" y="3072"/>
+  <object id="23" type="guard_spawn" x="3008" y="2112"/>
  </objectgroup>
 </map>

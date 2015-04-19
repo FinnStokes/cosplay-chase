@@ -185,7 +185,7 @@ class GuardManager:
 
         for o in level.data.objects:
             if o.type == "guard_spawn":
-                guard = Guard(o.x, o.y, 100, player, self, level)
+                guard = Guard(o.x, o.y, 500, player, self, level)
                 self.guards.add(guard)
 
     def update(self, dt, dx, dy):
@@ -194,6 +194,14 @@ class GuardManager:
     def draw(self, surface):
         self.guards.draw(surface)
 
+    def iscaptured(self, player):
+        for guard in self.guards:
+            if guard.rect.colliderect(player.rect):
+                return True
+        return False
+
+FOV = math.pi/3
+    
 class Guard(Character):
     """Guard that moves towards player character"""
 
@@ -203,6 +211,8 @@ class Guard(Character):
         Character.__init__(self, surf, x, y, speed, level)
         self.player = player
         self.gm = gm
+        self.facing = 0
+        self.fov = FOV
         self.memory = {}
 
     def update(self, dt, dx, dy):
@@ -226,5 +236,9 @@ class Guard(Character):
         direction = (direction[0]/mag, direction[1]/mag)
         self.move(direction, dt)
 
+        start = self.facing - self.fov/2
+        angle = start
+        
+
     def cansee(self, other):
-        return ((self.pos[0] - other.pos[0])**2 + (self.pos[1] - other.pos[1])**2) < 300**2
+        return ((self.pos[0] - other.pos[0])**2 + (self.pos[1] - other.pos[1])**2) < 700**2
