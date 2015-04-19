@@ -22,13 +22,13 @@ def walk(left, top, right, bottom, dx, dy):
         yield x1, y1, x2, y2, t*dx, t*dy
         dt = 1.0
         if dx > 0:
-            dt = min(dt, (math.floor(x1) + 1 - x1) * 1.0 / dx)
+            dt = min(dt, float(math.floor(x1) + 1 - x1) / dx)
         elif dx < 0:
-            dt = min(dt, (math.ceil(x1) - 1 - x1) * 1.0 / dx)
+            dt = min(dt, float(math.ceil(x1) - 1 - x1) / dx)
         if dy > 0:
-            dt = min(dt, (math.floor(y1) + 1 - y1) * 1.0 / dy)
+            dt = min(dt, float(math.floor(y1) + 1 - y1) / dy)
         elif dy < 0:
-            dt = min(dt, (math.ceil(y1) - 1 - y1) * 1.0 / dy)
+            dt = min(dt, float(math.ceil(y1) - 1 - y1) / dy)
         if dt == 0.0:
             break
 
@@ -56,14 +56,14 @@ class Character(pygame.sprite.Sprite):
         tw = self.level.data.tilewidth
         th = self.level.data.tileheight
 
-        left = self.rect.left + self.level.dx
-        right = self.rect.right + self.level.dx
-        top = self.rect.top + self.level.dy
-        bottom = self.rect.bottom + self.level.dy
+        left = self.rect.left + self.dx
+        right = self.rect.right + self.dx
+        top = self.rect.top + self.dy
+        bottom = self.rect.bottom + self.dy
 
         # print("-------------")
         # print(dx, dy)
-        for x1, y1, x2, y2, dxr, dyr in walk(left * 1.0 / tw, top * 1.0 / th, right * 1.0 / tw, bottom * 1.0 / th, dx * 1.0 / tw, dy * 1.0 / th):
+        for x1, y1, x2, y2, dxr, dyr in walk(float(left) / tw, float(top) / th, float(right) / tw, float(bottom) / th, float(dx) / tw, float(dy) / th):
             # print("-------------")
             # print(x1, y1, x2, y2)
             # print(dxr, dyr)
@@ -71,16 +71,16 @@ class Character(pygame.sprite.Sprite):
             y = int(math.floor(y1) if y1 > y2 else math.ceil(y1) - 1)
             collidey = False
             for xp in xrange(int(math.floor(min(x1, x2))), int(math.ceil(max(x1,x2)))):
-                # print(xp, y, self.level.passable((xp,y)))
-                if not self.level.passable((xp,y)):
+                # print(xp, y, self.level.passable[xp][y])
+                if not self.level.passable[xp][y]:
                     collidey = True
                     break
             # print("x")
             x = int(math.floor(x1) if x1 > x2 else math.ceil(x1) - 1)
             collidex = False
             for yp in xrange(int(math.floor(min(y1, y2))), int(math.ceil(max(y1,y2)))):
-                # print(x, yp, self.level.passable((x,yp)))
-                if not self.level.passable((x,yp)):
+                # print(x, yp, self.level.passable[x][yp])
+                if not self.level.passable[x][yp]:
                     collidex = True
                     break
             # print(collidex, collidey)
@@ -92,7 +92,7 @@ class Character(pygame.sprite.Sprite):
                     sign_x = 1 if dx > 0 else -1
                     for xp in xrange(int(x+sign_x), int(math.ceil(x1+dxr) if x1 > x2 else (math.floor(x1+dxr) - 1)), sign_x):
                         for y in xrange(int(math.floor(min(y1, y2))), int(math.ceil(max(y1,y2)))):
-                            if not self.level.passable((xp,y)):
+                            if not self.level.passable[xp][y]:
                                 if dx > 0:
                                     dxr = max(0.0, dxr - (xp - x) - (math.ceil(x1) - 1 - x1))
                                 else:
@@ -107,7 +107,7 @@ class Character(pygame.sprite.Sprite):
                     sign_y = 1 if dy > 0 else -1
                     for yp in xrange(int(y+sign_y), int(math.ceil(y1+dyr) if y1 > y2 else (math.floor(y1+dyr) - 1)), sign_y):
                         for x in xrange(int(math.floor(min(x1, x2))), int(math.ceil(max(x1,x2)))):
-                            if not self.level.passable((x,yp)):
+                            if not self.level.passable[x][yp]:
                                 if dy > 0:
                                     dyr = max(0.0, dyr - (yp - y) - (math.ceil(y1) - 1 - y1))
                                 else:
@@ -119,13 +119,44 @@ class Character(pygame.sprite.Sprite):
                     self.set_pos((current[0] + dx - dxr*tw, current[1] + dy))
                     return
                 else:
-                    if dx != 0.0 and dy != 0.0 and not self.level.passable((x,y)):
+                    if dx != 0.0 and dy != 0.0 and not self.level.passable[x][y]:
                         self.set_pos((current[0] + dx - dxr*tw, current[1] + dy - dyr*th))
                         return
                     else:
                         continue
 
         self.set_pos((current[0] + dx, current[1] + dy))
+
+    def tiles(self): 
+        tw = self.level.data.tilewidth
+        th = self.level.data.tileheight
+
+        left = int(math.floor(float(self.rect.left + self.dx) / tw))
+        right = int(math.ceil(float(self.rect.right + self.dx) / tw))
+        top = int(math.floor(float(self.rect.top + self.dy) / th))
+        bottom = int(math.ceil(float(self.rect.bottom + self.dy) / th))
+
+        return itertools.product(xrange(left, right), xrange(top, bottom))
+
+    def adjacent_tiles(self): 
+        tw = self.level.data.tilewidth
+        th = self.level.data.tileheight
+
+        left = int(math.floor(float(self.rect.left + self.dx) / tw))
+        right = int(math.ceil(float(self.rect.right + self.dx) / tw))
+        top = int(math.floor(float(self.rect.top + self.dy) / th))
+        bottom = int(math.ceil(float(self.rect.bottom + self.dy) / th))
+
+        return (itertools.product(xrange(left, right+1), xrange(top, bottom+1)),
+                itertools.product((left-1,), xrange(top, bottom+1)),
+                itertools.product((right+1,), xrange(top, bottom+1)),
+                itertools.product(xrange(left, right+1), (top-1,)),
+                itertools.product(xrange(left, right+1), (bottom+1,)),
+                itertools.chain(itertools.product((left-1,), xrange(top, bottom)), itertools.product(xrange(left-1, right), (top-1,))),
+                itertools.chain(itertools.product((right+1,), xrange(top, bottom)), itertools.product(xrange(left+1, right+2), (top-1,))),
+                itertools.chain(itertools.product((right+1,), xrange(top+1, bottom+1)), itertools.product(xrange(left+1, right+2), (bottom+1,))),
+                itertools.chain(itertools.product((left-1,), xrange(top+1, bottom+1)), itertools.product(xrange(left-1, right), (bottom+1,))),
+        )
 
     def set_pos(self, pos):
         self.pos = pos
@@ -135,7 +166,7 @@ class Character(pygame.sprite.Sprite):
         self.dx += dx
         self.dy += dy
         self.set_pos(self.pos)
-    
+
 class Player(Character):
     """Player character"""
 
@@ -144,15 +175,34 @@ class Player(Character):
         surf.fill((100, 0, 0))
         Character.__init__(self, surf, x, y, speed, level)
 
+class GuardManager:
+    """Manages guards and their movement"""
+
+    def __init__(self, player, level):
+        self.player = player
+        self.level = level
+        self.guards = pygame.sprite.Group()
+
+        for o in level.data.objects:
+            if o.type == "guard_spawn":
+                guard = Guard(o.x, o.y, 100, player, self, level)
+                self.guards.add(guard)
+
+    def update(self, dt, dx, dy):
+        self.guards.update(dt, dx, dy)
+
+    def draw(self, surface):
+        self.guards.draw(surface)
+
 class Guard(Character):
     """Guard that moves towards player character"""
 
-    def __init__(self, x, y, speed, player, guards, level):
+    def __init__(self, x, y, speed, player, gm, level):
         surf = pygame.Surface((40, 40))
         surf.fill((0, 0, 100))
         Character.__init__(self, surf, x, y, speed, level)
         self.player = player
-        self.guards = guards
+        self.gm = gm
         self.memory = {}
 
     def update(self, dt, dx, dy):
@@ -161,7 +211,7 @@ class Guard(Character):
         # Update memory
         if self.cansee(self.player):
             self.memory[self.player] = (self.player.pos[0], self.player.pos[1])
-        for guard in self.guards:
+        for guard in self.gm.guards:
             if self.cansee(guard):
                 self.memory[guard] = (guard.pos[0], guard.pos[1])
 

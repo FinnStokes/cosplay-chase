@@ -1,13 +1,15 @@
 # Cosplay Chase
 # A top-down stealth game
 
+import argparse
+import cProfile
 import os
 
 import pygame
 from pygame.locals import *
 
-import world
 import character
+import world
 
 ONEONSQRT2 = 0.70710678118
 
@@ -18,8 +20,6 @@ def main():
     pygame.display.set_caption('Cosplay Chase')
     screenRect = screen.get_rect()
 
-    sprites = pygame.sprite.Group()
-    
     # Fill background
     background = pygame.Surface(screen.get_size())
     background = background.convert()
@@ -29,16 +29,11 @@ def main():
     level = world.Level(os.path.join("data","world","test.tmx"))
 
     spawnLoc = level.data.get_object_by_name("Player")
+    sprites = pygame.sprite.Group()
     player = character.Player(spawnLoc.x, spawnLoc.y, 800, level)
     sprites.add(player)
+    guards = character.GuardManager(player, level)
 
-    guards = pygame.sprite.Group()
-    for o in level.data.objects:
-        if o.type == "guard_spawn":
-            guard = character.Guard(o.x, o.y, 500, player, guards, level)
-            guards.add(guard)
-            sprites.add(guard)
-    
     # Initialise clock
     clock = pygame.time.Clock()
 
@@ -84,11 +79,21 @@ def main():
         dy = player.rect.center[1] - screenRect.height / 2
         level.update(dt, dx, dy)
         sprites.update(dt, dx, dy)
-        
+        guards.update(dt, dx, dy)
+
         # Blit everything to the screen
         screen.blit(background, (0,0))
         level.draw(screenRect, screen)
+        guards.draw(screen)
         sprites.draw(screen)
         pygame.display.flip()
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Time travel game by 3 Silly Hats.')
+    parser.add_argument('--profile-file', action='store')
+    parser.add_argument('-p', '--profile', action='store_true')
+    args = parser.parse_args()
+    if args.profile:
+        cProfile.run("main()", filename=args.profile_file)
+    else:
+        main()

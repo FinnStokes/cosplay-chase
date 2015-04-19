@@ -10,11 +10,13 @@ class Level():
         self.data = pytmxutil.load_pygame(filename)
         self.dx = 0
         self.dy = 0
+        i = self.data.visible_tile_layers.next()
+        self.passable = [[self.data.get_tile_properties(x, y, i)['Passable'] == "True" for y in xrange(self.data.height)] for x in xrange(self.data.width)]
 
-    def passable(self, pos):
-        for i in self.data.visible_tile_layers:
-            tile = self.data.get_tile_properties(int(pos[0]), int(pos[1]), i)
-            return tile['Passable'] == "True"
+    # def passable(self, pos):
+    #     for i in self.data.visible_tile_layers:
+    #         tile = self.data.get_tile_properties(int(pos[0]), int(pos[1]), i)
+    #         return tile['Passable'] == "True"
 
     def draw(self, rect, surface):
         surface_blit = surface.blit
