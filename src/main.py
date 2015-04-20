@@ -18,6 +18,7 @@ def main(screenRes):
     pygame.init()
     screen = pygame.display.set_mode(screenRes, pygame.FULLSCREEN|pygame.DOUBLEBUF)
     pygame.display.set_caption('Cosplay Chase')
+    screenRect = screen.get_rect()
 
     # Fill background
     background = pygame.Surface(screen.get_size())
@@ -32,7 +33,6 @@ def main(screenRes):
     while True:
         level.dx = 0
         level.dy = 0
-        screenRect = screen.get_rect()
         sprites = pygame.sprite.Group()
         player = character.Player(spawnLoc.x, spawnLoc.y, 800, level)
         sprites.add(player)

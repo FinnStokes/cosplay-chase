@@ -87,7 +87,7 @@ class Character(pygame.sprite.Sprite):
             if collidey:
                 if collidex:
                     self.set_pos((current[0] + dx - dxr*tw, current[1] + dy - dyr*th))
-                    return
+                    return False
                 else:
                     sign_x = 1 if dx > 0 else -1
                     for xp in xrange(int(x+sign_x), int(math.ceil(x1+dxr) if x1 > x2 else (math.floor(x1+dxr) - 1)), sign_x):
@@ -100,7 +100,7 @@ class Character(pygame.sprite.Sprite):
                                 self.set_pos((current[0] + dx - dxr*tw, current[1] + dy - dyr*th))
                                 return
                     self.set_pos((current[0] + dx, current[1] + dy - dyr*th))
-                    return
+                    return True
             else:
                 if collidex:
                     # print("justx")
@@ -117,15 +117,16 @@ class Character(pygame.sprite.Sprite):
                                 return
                     # print(dx - dxr*tw, dy)
                     self.set_pos((current[0] + dx - dxr*tw, current[1] + dy))
-                    return
+                    return True
                 else:
                     if dx != 0.0 and dy != 0.0 and not self.level.passable[x][y]:
                         self.set_pos((current[0] + dx - dxr*tw, current[1] + dy - dyr*th))
-                        return
+                        return True
                     else:
                         continue
 
         self.set_pos((current[0] + dx, current[1] + dy))
+        return True
 
     def tiles(self): 
         tw = self.level.data.tilewidth
@@ -184,8 +185,8 @@ class GuardManager:
         self.guards = pygame.sprite.Group()
 
         for o in level.data.objects:
-            if o.type == "guard_spawn":
-                guard = Guard(o.x, o.y, 500, player, self, level)
+            if o.type == "guard":
+                guard = Guard(o.points, o.closed, 500, player, self, level)
                 self.guards.add(guard)
 
     def update(self, dt, dx, dy):
@@ -205,16 +206,20 @@ FOV = math.pi/3
 class Guard(Character):
     """Guard that moves towards player character"""
 
-    def __init__(self, x, y, speed, player, gm, level):
+    def __init__(self, points, closed, speed, player, gm, level):
         surf = pygame.Surface((40, 40))
         surf.fill((0, 0, 100))
-        Character.__init__(self, surf, x, y, speed, level)
+        Character.__init__(self, surf, points[0][0], points[0][1], speed, level)
         self.player = player
         self.gm = gm
         self.facing = 0
         self.fov = FOV
         self.memory = {}
-
+        self.points = points
+        self.closed = closed
+        self.currentpoint = 1
+        self.pointdelta = 1
+        
     def update(self, dt, dx, dy):
         Character.update(self, dt, dx, dy)
 
@@ -228,17 +233,37 @@ class Guard(Character):
         # Update movement
         direction = (0, 0)
         if self.player in self.memory:
-            playerpos = self.memory[self.player]
-            direction = (playerpos[0] - self.pos[0], playerpos[1] - self.pos[1])
+            target = self.memory[self.player]
+            if self.pos == target:
+                del self.memory[self.player]
+        else:
+            target = self.points[self.currentpoint]
+            if self.pos == target:
+                self.next_point()
+        direction = (target[0] - self.pos[0], target[1] - self.pos[1])
         mag = math.sqrt(direction[0]**2 + direction[1]**2)
         if mag < self.speed*dt:
             mag = self.speed*dt
         direction = (direction[0]/mag, direction[1]/mag)
-        self.move(direction, dt)
+        isstuck = not self.move(direction, dt)
+        if isstuck:
+            if self.player in self.memory:
+                del self.memory[self.player]
+            else:
+                self.next_point()
 
         start = self.facing - self.fov/2
         angle = start
-        
+
+    def next_point(self):
+        self.currentpoint += self.pointdelta
+        if self.currentpoint >= len(self.points) or self.currentpoint < 0:
+            if self.closed:
+                self.currentpoint = 0
+            else:
+                self.pointdelta *= -1
+                self.currentpoint += 2*self.pointdelta
+
 
     def cansee(self, other):
         return ((self.pos[0] - other.pos[0])**2 + (self.pos[1] - other.pos[1])**2) < 700**2
