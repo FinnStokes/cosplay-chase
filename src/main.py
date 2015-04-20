@@ -36,7 +36,7 @@ def main(screenRes):
         sprites = pygame.sprite.Group()
         player = character.Player(spawnLoc.x, spawnLoc.y, 800, level)
         sprites.add(player)
-        guards = character.GuardManager(player, level)
+        guards = character.GuardManager(player, level, screenRect)
 
         # Initialise clock
         clock = pygame.time.Clock()

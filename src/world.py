@@ -12,6 +12,7 @@ class Level():
         self.dy = 0
         i = self.data.visible_tile_layers.next()
         self.passable = [[self.data.get_tile_properties(x, y, i)['Passable'] == "True" for y in xrange(self.data.height)] for x in xrange(self.data.width)]
+        self.transparent = [[self.data.get_tile_properties(x, y, i)['Transparent'] == "True" for y in xrange(self.data.height)] for x in xrange(self.data.width)]
 
     # def passable(self, pos):
     #     for i in self.data.visible_tile_layers:
