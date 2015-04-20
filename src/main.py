@@ -13,10 +13,10 @@ import world
 
 ONEONSQRT2 = 0.70710678118
 
-def main():
+def main(screenRes):
     # Initialise screen
     pygame.init()
-    screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN|pygame.DOUBLEBUF)
+    screen = pygame.display.set_mode(screenRes, pygame.FULLSCREEN|pygame.DOUBLEBUF)
     pygame.display.set_caption('Cosplay Chase')
 
     # Fill background
@@ -96,12 +96,22 @@ def main():
         print("You've been caught and your weapon has been confiscated!")
         print("You lasted {:.1f} seconds.".format((pygame.time.get_ticks() - start_time) / 1000.0))
 
+def resolution(raw):
+    a = raw.split("x")
+    if len(a) != 2:
+        raise ValueError()
+    return (int(a[0]), int(a[1]))
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A top-down stealth game.')
-    parser.add_argument('--profile-file', action='store')
-    parser.add_argument('-p', '--profile', action='store_true')
+    parser.add_argument('--profile-file', action='store',
+                        help="File to store profiling output in")
+    parser.add_argument('-p', '--profile', action='store_true',
+                        help="Enable profiling using cProfile")
+    parser.add_argument('-r', '--resolution', action='store', type=resolution, default=(0,0),
+                        help="Target screen resolution (e.g. 1920x1080)")
     args = parser.parse_args()
     if args.profile:
-        cProfile.run("main()", filename=args.profile_file)
+        cProfile.run("main(args.resolution)", filename=args.profile_file)
     else:
-        main()
+        main(args.resolution)
