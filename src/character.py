@@ -202,7 +202,6 @@ class GuardManager:
     def iscaptured(self, player):
         for guard in self.guards:
             if guard.rect.colliderect(player.rect):
-                print(guard.tmp)
                 return True
         return False
 
@@ -221,7 +220,7 @@ class Guard(Character):
         self.facing = 0
         self.fov = FOV
         self.memory = {}
-        self.tmp = None
+        self.polar = None
         self.points = points
         self.closed = closed
         self.currentpoint = 1
@@ -229,6 +228,7 @@ class Guard(Character):
         self.sight = []
         self.viewbox = pygame.Rect(0, 0, 2*RANGE+2, 2*RANGE+2)
         self.screenRect = screenRect
+        self.chosen = 0
         
     def update(self, dt, dx, dy):
         Character.update(self, dt, dx, dy)
@@ -236,9 +236,9 @@ class Guard(Character):
         # Update memory
         if self.cansee(self.player):
             self.memory[self.player] = (self.player.pos[0], self.player.pos[1])
-        for guard in self.gm.guards:
-            if self.cansee(guard):
-                self.memory[guard] = (guard.pos[0], guard.pos[1])
+        # for guard in self.gm.guards:
+        #     if self.cansee(guard):
+        #         self.memory[guard] = (guard.pos[0], guard.pos[1])
 
         # Update movement
         direction = (0, 0)
@@ -255,7 +255,64 @@ class Guard(Character):
         if mag < self.speed*dt:
             mag = self.speed*dt
         direction = (direction[0]/mag, direction[1]/mag)
-        isstuck = False #not self.move(direction, dt)
+        self.facing = math.atan2(-direction[1], direction[0])
+        d = 1024
+        for p in self.castray(self.facing, 0):
+            if p[0][2]:
+                d = p[0][1]
+                break
+        if d < 256:
+            angle = (256 - d) * math.pi / 1024
+            if self.chosen < 0:
+                angle = min(angle * (1 - (self.chosen+1)/2.0), math.pi)
+                d1 = 1024
+                for p in self.castray(self.facing-angle, 0):
+                    if p[0][2]:
+                        d1 = p[0][1]
+                        break
+                if d1 < 256:
+                    self.chosen -= dt
+                else:
+                    self.chosen = -1
+                self.facing -= angle
+            elif self.chosen > 0:
+                angle = min(angle * (1 + (self.chosen-1)/2.0), math.pi)
+                d2 = 1024
+                for p in self.castray(self.facing+angle, 0):
+                    if p[0][2]:
+                        d2 = p[0][1]
+                        break
+                if d2 < 256:
+                    self.chosen += dt
+                else:
+                    self.chosen = 1
+                self.facing += angle
+            else:
+                d1 = 1024
+                for p in self.castray(self.facing-angle, 0):
+                    if p[0][2]:
+                        d1 = p[0][1]
+                        break
+                d2 = 1024
+                for p in self.castray(self.facing+angle, 0):
+                    if p[0][2]:
+                        d2 = p[0][1]
+                        break
+                if d1 > d2:
+                    self.chosen = -1
+                    self.facing -= angle
+                else:
+                    self.chosen = +1
+                    self.facing += angle
+            direction = (math.cos(self.facing), -math.sin(self.facing))
+        else:
+            if self.chosen > dt/2:
+                self.chosen -= dt/2
+            elif self.chosen < -dt/2:
+                self.chosen += dt
+            else:
+                self.chosen = 0
+        isstuck = not self.move(direction, dt)
         if isstuck:
             if self.player in self.memory:
                 del self.memory[self.player]
@@ -295,7 +352,7 @@ class Guard(Character):
                     visited.add((angle, p[3]))
                     #print(p)
                     angle = p[0]
-                    if angle > end:
+                    if angle > end or angle < start:
                         break
                     while angle >= target[0]:
                         # print("edge")
@@ -327,16 +384,23 @@ class Guard(Character):
                 oldrange = target[1]
             # print("--------")
             sight.append(self.intersectray(end, sight[-1], target))
-            self.tmp = sight
+            self.polar = [(0,0,False, None)]
             self.sight = [(self.pos[0] - self.dx, self.pos[1] - self.dy)]
             old = (0,0,True,None)
             for p in sight:
                 if not p[2] and not old[2]:
                     a = p[0] - old[0]
-                    n = int(60*a)
+                    if a > math.pi:
+                        a -= 2*math.pi
+                    elif a < -math.pi:
+                        a += 2*math.pi
+                    a = p[0] - old[0]
+                    n = max(int(60*a), 1)
                     da = a / n
                     self.sight += [(self.pos[0] - self.dx + p[1]*math.cos(old[0] + da*i), self.pos[1] - self.dy - p[1]*math.sin(old[0] + da*i)) for i in xrange(1,n)]
+                    self.polar += [(old[0] + da*i, old[1], old[2], old[3]) for i in xrange(1,n)]
                 self.sight.append((self.pos[0] - self.dx + p[1]*math.cos(p[0]), self.pos[1] - self.dy - p[1]*math.sin(p[0])))
+                self.polar.append(p)
                 old = p
             #self.sight = [self.pos]+[(self.pos[0] + p[1]*math.cos(p[0]), self.pos[1] + p[1]*math.sin(p[0])) for p in sight]
 
@@ -369,6 +433,8 @@ class Guard(Character):
                         end = (tx, ty+1)
                     x_diff = end[0]*tw - self.pos[0]
                     y_diff = end[1]*th - self.pos[1]
+                    if tx < 0 or tx >= self.level.data.width or ty < 0 or ty >= self.level.data.height:
+                        break
                     opaque = not self.level.transparent[tx][ty]
                     yield ((angle, r, opaque, (tx, ty)), (math.atan2(-y_diff, x_diff), math.sqrt(x_diff**2 + y_diff**2), opaque, (tx, ty)))
                     if dy > 0:
@@ -396,6 +462,8 @@ class Guard(Character):
                         end = (tx+1, ty+1)
                     x_diff = end[0]*tw - self.pos[0]
                     y_diff = end[1]*th - self.pos[1]
+                    if tx < 0 or tx >= self.level.data.width or ty < 0 or ty >= self.level.data.height:
+                        break
                     opaque = not self.level.transparent[tx][ty]
                     yield ((angle, r, opaque, (tx, ty)), (math.atan2(-y_diff, x_diff), math.sqrt(x_diff**2 + y_diff**2), opaque, (tx, ty)))
                     if dx > 0:
@@ -429,6 +497,8 @@ class Guard(Character):
                 ty = int(math.floor(y/th))
             else:
                 ty = int(math.ceil(y/th)) - 1
+            if tx < 0 or tx >= self.level.data.width or ty < 0 or ty >= self.level.data.height:
+                break
             opaque = not self.level.transparent[tx][ty]
             if dxr < dyr:
                 if dx > 0:
@@ -465,6 +535,8 @@ class Guard(Character):
                         end = (tx, ty+1)
                         tx2, ty2 = tx, ty+1
                         end2 = (tx2+1, ty2+1)
+                if tx2 < 0 or tx2 >= self.level.data.width or ty2 < 0 or ty2 >= self.level.data.height:
+                    break
                 opaque2 = not self.level.transparent[tx2][ty2]
                 x_diff2 = end2[0]*tw - self.pos[0]
                 y_diff2 = end2[1]*th - self.pos[1]
@@ -477,7 +549,14 @@ class Guard(Character):
         if not start[3] or not end[3]:
             return (angle, RANGE, False, None)
         else:
-            r = start[1] / (math.sin(angle - start[0])*((start[1]/end[1]) - math.cos(end[0] - start[0]))/math.sin(end[0] - start[0]) + math.cos(angle - start[0]))
+            if math.sin(end[0] - start[0]) != 0 and end[1] != 0:
+                den = (math.sin(angle - start[0])*((start[1]/end[1]) - math.cos(end[0] - start[0]))/math.sin(end[0] - start[0]) + math.cos(angle - start[0]))
+                if den != 0:
+                    r = start[1] / den
+                else:
+                    r = RANGE
+            else:
+                r = 0
             return (angle, min(r, RANGE), start[2], start[3])
 
     def edges(self, corner):
@@ -521,14 +600,16 @@ class Guard(Character):
             else:
                 end = (tx, ty)
         if dx != 0 and dy != 0:
-            opaque2 = not self.level.transparent[tx2][ty2]
-            x_diff2 = end2[0]*tw - self.pos[0]
-            y_diff2 = end2[1]*th - self.pos[1]
-            yield ((corner[0], corner[1], opaque2, (tx2, ty2)), (math.atan2(-y_diff2, x_diff2), math.sqrt(x_diff2**2 + y_diff2**2), opaque2, (tx2, ty2)))
-        opaque = not self.level.transparent[tx][ty]
-        x_diff = end[0]*tw - self.pos[0]
-        y_diff = end[1]*th - self.pos[1]
-        yield ((corner[0], corner[1], opaque, (tx, ty)), (math.atan2(-y_diff, x_diff), math.sqrt(x_diff**2 + y_diff**2), opaque, (tx, ty)))
+            if tx2 >= 0 and tx2 < self.level.data.width and ty2 >= 0 and ty2 < self.level.data.height:
+                opaque2 = not self.level.transparent[tx2][ty2]
+                x_diff2 = end2[0]*tw - self.pos[0]
+                y_diff2 = end2[1]*th - self.pos[1]
+                yield ((corner[0], corner[1], opaque2, (tx2, ty2)), (math.atan2(-y_diff2, x_diff2), math.sqrt(x_diff2**2 + y_diff2**2), opaque2, (tx2, ty2)))
+        if tx >= 0 and tx < self.level.data.width and ty >= 0 and ty < self.level.data.height:
+            opaque = not self.level.transparent[tx][ty]
+            x_diff = end[0]*tw - self.pos[0]
+            y_diff = end[1]*th - self.pos[1]
+            yield ((corner[0], corner[1], opaque, (tx, ty)), (math.atan2(-y_diff, x_diff), math.sqrt(x_diff**2 + y_diff**2), opaque, (tx, ty)))
         
     def draw(self, surface):
         if self.viewbox.colliderect(self.screenRect):
@@ -545,4 +626,81 @@ class Guard(Character):
 
 
     def cansee(self, other):
-        return ((self.pos[0] - other.pos[0])**2 + (self.pos[1] - other.pos[1])**2) < RANGE**2
+        if not self.polar:
+            return False
+        if ((self.pos[0] - other.pos[0])**2 + (self.pos[1] - other.pos[1])**2) > RANGE**2:
+            return False
+        angles = [math.atan2(-(y - self.pos[1] + self.dy), x - self.pos[0] + self.dx) - self.facing for x,y in (other.rect.topleft, other.rect.topright, other.rect.bottomright, other.rect.bottomleft)]
+        for i in xrange(len(angles)):
+            if angles[i] < -math.pi:
+                angles[i] += 2*math.pi
+            elif angles[i] > math.pi:
+                angles[i] -= 2*math.pi
+        distance2 = [(x - self.pos[0] + self.dx)**2 + (y - self.pos[1] + self.dy)**2 for x,y in (other.rect.topleft, other.rect.topright, other.rect.bottomright, other.rect.bottomleft)]
+        minangle = min(angles)
+        maxangle = max(angles)
+        mindist = min(distance2)
+        maxdist = max(distance2)
+        jl = -1
+        jh = -1
+        for i in xrange(1, len(self.polar)):
+            angle = self.polar[i][0] - self.facing
+            if angle < -math.pi:
+                angle += 2*math.pi
+            elif angle > math.pi:
+                angle -= 2*math.pi
+            if jl == -1 and angle > minangle:
+                jl = i - 1
+            if jl != -1 and angle > maxangle:
+                jh = i
+                break
+        if jl == -1 or jh == -1:
+            return False
+        vision = self.polar[jl:jh+1]
+        if len(vision) < 2:
+            return False
+        if max((p[1] for p in vision))**2 < mindist:
+            return False
+        if min((p[1] for p in vision))**2 > maxdist:
+            return True
+        points = self.sight[jl:jh+1]
+        for i in xrange(len(points)-1):
+            if intersect_line_rect(points[i], points[i+1], other.rect):
+                return True
+        return False
+
+def intersect_line_rect(p1, p2, rect):
+    bb = pygame.Rect(min(p1[0], p2[0]), min(p1[1], p2[1]), abs(p1[0] - p2[0]), abs(p1[1] - p2[1]))
+    if not bb.colliderect(rect):
+        return False
+    rx = p1[0] - p2[0]
+    ry = p1[1] - p2[1]
+    if rx != 0:
+        rxinv = 1.0 / rx
+        rcsinv = 1.0 / (rx * rect.height)
+        
+        t = (p1[0] - rect.left) * rxinv
+        u = ((p1[0] - rect.left)*ry - (p1[1]-rect.top)*rx) * rcsinv
+        if t >= 0 and t <= 1:
+            return True
+        
+        t = (p1[0] - rect.right) * rxinv
+        u = ((p1[0] - rect.right)*ry - (p1[1]-rect.top)*rx) * rcsinv
+        if t >= 0 and t <= 1:
+            return True
+        
+    if ry != 0:
+        ryinv = 1.0 / ry
+        rcsinv = 1.0 / (ry * rect.width)
+        
+        t = (p1[0] - rect.top) * ryinv
+        u = ((p1[0] - rect.left)*ry - (p1[1]-rect.top)*rx) * rcsinv
+        if t >= 0 and t <= 1:
+            return True
+        
+        t = (p1[0] - rect.bottom) * ryinv
+        u = ((p1[0] - rect.left)*ry - (p1[1]-rect.bottom)*rx) * rcsinv
+        if t >= 0 and t <= 1:
+            return True
+
+    return False
