@@ -25,6 +25,29 @@ def main(screenRes):
     background = background.convert()
     background.fill((50,50,50))
 
+    splash_screen = pygame.image.load(os.path.join("data", "title.png"))
+    splash_rect = splash_screen.get_rect()
+    splash_rect.center = screenRect.center
+    
+    gameover_screen = pygame.image.load(os.path.join("data", "gameover.png"))
+    gameover_rect = gameover_screen.get_rect()
+    gameover_rect.center = screenRect.center
+    font = pygame.font.SysFont(pygame.font.match_font("sans", "arial"), 50)
+    
+    splash = True
+    while splash:
+        screen.blit(background, (0,0))
+        screen.blit(splash_screen, splash_rect)
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                return
+            elif event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    return
+                else:
+                    splash = False
+    
     # Load level from tiled level file
     level = world.Level(os.path.join("data","world","test.tmx"))
 
@@ -93,8 +116,28 @@ def main(screenRes):
             sprites.draw(screen)
             pygame.display.flip()
 
+        lifetime = (pygame.time.get_ticks() - start_time) / 1000.0
         print("You've been caught and your weapon has been confiscated!")
-        print("You lasted {:.1f} seconds.".format((pygame.time.get_ticks() - start_time) / 1000.0))
+        print("You lasted {:.1f} seconds.".format(lifetime))
+
+        lifetime_img = font.render("{:.1f} seconds".format(lifetime), True, (0,0,0))
+        lifetime_rect = lifetime_img.get_rect()
+        lifetime_rect.center = (gameover_rect.center[0], gameover_rect.center[1] + 25)
+        
+        splash = True
+        while splash:
+            screen.blit(background, (0,0))
+            screen.blit(gameover_screen, gameover_rect)
+            screen.blit(lifetime_img, lifetime_rect)
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    return
+                elif event.type == KEYDOWN:
+                    if event.key == K_ESCAPE:
+                        return
+                    else:
+                        splash = False
 
 def resolution(raw):
     a = raw.split("x")
