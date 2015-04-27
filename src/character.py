@@ -366,7 +366,10 @@ class Guard(Character):
         old_dy = 0
 
         for v in vertices:
+            # print(v)
             # print(current)
+            # print(hwalls)
+            # print(vwalls)
             angle = v[0]
             if angle > end:
                 break
@@ -374,6 +377,7 @@ class Guard(Character):
             dx = tx*tw - self.pos[0]
             dy = ty*tw - self.pos[1]
             if dx == 0 or old_dx*dx < 0:
+                # print("clear v")
                 vwalls.clear()
                 if current[0] == 0:
                     # find next nearest wall
@@ -384,6 +388,7 @@ class Guard(Character):
                         current = (1, ty)
                         hwalls.remove(ty)                    
             if dy == 0 or old_dy*dy < 0:
+                # print("clear h")
                 hwalls.clear()
                 if current[0] == 1:
                     # find next nearest wall
@@ -401,7 +406,7 @@ class Guard(Character):
                 sight += [(pos[0] - self.dx, pos[1] - self.dy)]
                 polar += [(start, dist)]
             # if vertex lies on current wall, terminate it
-            if current[0] >= 0 and current[1] == v[2][current[0]]:
+            if current[0] >= 0 and current[1] == v[2][current[0]] and v[3][current[0]] != 0:
                 # print("end wall", current)
                 wall = current
                 # add wall starting at v if it is in the right direction
@@ -415,13 +420,16 @@ class Guard(Character):
                 # find next nearest wall
                 if len(hwalls) == 0:
                     if len(vwalls) == 0:
+                        # print("none revealed")
                         current = (-1, 0)
                     else:
                         tx = min(vwalls) if dx > 0 else max(vwalls)
+                        # print("v revealed (no h)")
                         current = (0, tx)
                         vwalls.remove(tx)
                 else:
                     if len(vwalls) == 0:
+                        # print("h revealed (no v)")
                         ty = min(hwalls) if dy > 0 else max(hwalls)
                         current = (1, ty)
                         hwalls.remove(ty)
@@ -431,46 +439,69 @@ class Guard(Character):
                         ty = min(hwalls) if dy > 0 else max(hwalls)
                         # print(tx, ty)
                         if (tx*tw - self.pos[0])/dx < (ty*th - self.pos[1])/dy:
+                            # print("v revealed")
                             current = (0, tx)
                             vwalls.remove(tx)
                         else:
+                            # print("h revealed")
                             current = (1, ty)
                             hwalls.remove(ty)
                 if angle > start:
+                    # print("wall ended")
                     old_dist = dx**2 + dy**2
                     new_cart, new_polar = self.interpolate_range(polar[-1], (angle, old_dist), wall, (v[2][0]*tw, v[2][1]*th))
                     if old_dist < RANGE**2:
                         pos, dist = self.wall_intersection(current, angle)
                         sight += new_cart + [(pos[0] - self.dx, pos[1] - self.dy)]
                         polar += new_polar + [(angle, dist)]
+                        # print(sight)
+                        # print("append", pos[1] - self.dy)
                     else:
+                        # print("out of range")
+                        # print(new_cart)
                         sight += new_cart
                         polar += new_polar
             # otherwise, terminate intersecting walls
             else:
-                if ty in hwalls:
-                    # print("h endpoint", ty)
-                    hwalls.remove(ty)
-                if tx in vwalls:
-                    # print("v endpoint", tx)
-                    vwalls.remove(tx)
+                if v[3][1] != 0:
+                    if ty in hwalls:
+                        # print("h endpoint", ty)
+                        hwalls.remove(ty)
+                if v[3][0] != 0:
+                    if tx in vwalls:
+                        # print("v endpoint", tx)
+                        vwalls.remove(tx)
                 # If wall is in right direction
                 if dy*v[3][0] - dx*v[3][1] > 0:
                     # if vertex is closer than current, repace current with new wall
                     if current[0] < 0 or v[1] < self.wall_intersection(current, angle)[1]:
                         if angle > start:
-                            pos, dist = self.wall_intersection(current, angle)
-                            new_cart, new_polar = self.interpolate_range(polar[-1], (angle, dist), current, pos)
-                            # print((pos[0]/tw, pos[1]/th), (tx, ty))
+                            # print("wall occluded")
                             new_dist = dx**2 + dy**2
+                            # print((angle, dist), polar[-1])
+                            if angle <= polar[-1][0] and new_dist < polar[-1][1]:
+                                # print("remove occluded point")
+                                # print(polar)
+                                sight = sight[:-1]
+                                polar = polar[:-1]
+                                # print(polar)
+                                new_cart, new_polar = [], []
+                                dist = RANGE**2
+                            else:
+                                pos, dist = self.wall_intersection(current, angle)
+                                new_cart, new_polar = self.interpolate_range(polar[-1], (angle, dist), current, pos)
+                            # print((pos[0]/tw, pos[1]/th), (tx, ty))
                             if new_dist <= RANGE**2:
+                                # print("new in range")
                                 sight += new_cart + [(tx*tw - self.dx, ty*th - self.dy)]
                                 polar += new_polar + [(angle, new_dist)]
                             else:
                                 if dist < RANGE**2:
+                                    # print("old in range")
                                     sight += new_cart + [(self.pos[0] + RANGE*math.cos(angle) - self.dx, ty*th - RANGE*math.sin(angle) - self.dy)]
                                     polar += new_polar + [(angle, RANGE**2)]
                                 else:
+                                    # print("neither")
                                     sight += new_cart
                                     polar += new_polar
                         if current[0] == 1:
@@ -527,24 +558,31 @@ class Guard(Character):
         sight += new_cart
         polar += new_polar
 
+        # print(sight)
+        # print(polar)
         # print(len(sight), len(polar))
         return sight, polar
 
     def interpolate_range(self, prev, current, wall, end):
         if wall[0] < 0:
+            # print("no wall")
             return self.arc(prev[0], current[0])
         else:
             if prev[1] < RANGE**2 and current[1] < RANGE**2:
+                # print("in range")
                 return [(end[0] - self.dx, end[1] - self.dy)], [current]
             else:
                 tw, th = self.level.data.tilewidth, self.level.data.tileheight
                 if wall[0] == 0:
                     dx = wall[1]*tw - self.pos[0]
+                    # print("dx")
                     if abs(dx) >= RANGE:
+                        # print("abs(dx) >= RANGE")
                         return self.arc(prev[0], current[0])
                     else:
                         dy = math.sqrt(RANGE**2 - dx**2)
                         if dx > 0:
+                            # print("dx > 0")
                             if end[1] < self.pos[1] + dy:
                                 a1 = normalise(math.atan2(-dy, dx) - self.facing)
                                 if a1 > prev[0]:
@@ -556,12 +594,14 @@ class Guard(Character):
                                     if a2 <= prev[0]:
                                         return self.arc(prev[0], current[0])
                                     c2, p2 = self.arc(a2, current[0])
-                                    return c1+[(wall[1]*tw - self.dx, self.pos[1] + dy - self.dy)]+c2, p1+[(a2, RANGE**2)]+p2
+                                    # print("in and out")
+                                    return c1+[(wall[1]*tw - self.dx, self.pos[1] - dy - self.dy)]+c2, p1+[(a2, RANGE**2)]+p2
                                 else:
                                     return c1+[(end[0] - self.dx, end[1] - self.dy)], p1+[current]
                             else:
                                 return self.arc(prev[0], current[0])
                         else:
+                            # print("dx < 0")
                             if end[1] > self.pos[1] - dy:
                                 a1 = normalise(math.atan2(dy, dx) - self.facing)
                                 if a1 > prev[0]:
@@ -580,8 +620,10 @@ class Guard(Character):
                                 return self.arc(prev[0], current[0])
                 else:
                     dy = wall[1]*th - self.pos[1]
+                    # print("dy")
                     # print(wall[1]*th, self.pos[1], dy)
                     if abs(dy) >= RANGE:
+                        # print("abs(dy) >= RANGE")
                         return self.arc(prev[0], current[0])
                     else:
                         dx = math.sqrt(RANGE**2 - dy**2)
