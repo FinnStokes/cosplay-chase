@@ -32,7 +32,7 @@ def main(screenRes):
     gameover_screen = pygame.image.load(os.path.join("data", "gameover.png"))
     gameover_rect = gameover_screen.get_rect()
     gameover_rect.center = screenRect.center
-    font = pygame.font.SysFont(pygame.font.match_font("sans", "arial"), 50)
+    font = pygame.font.SysFont("Arial", 50)
     
     splash = True
     while splash:
